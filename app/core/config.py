@@ -12,8 +12,8 @@ class Settings(BaseSettings):
     POKEAPI_BASE_URL: str = "https://pokeapi.co/api/v2"
 
     # Redis Cache
-    REDIS_HOST: str = "localhost"  # Sera sobrescrito no Docker
-    REDIS_PORT: int = 6379
+    # URL padrão para rodar localmente no Docker
+    REDIS_URL: str = "redis://localhost:6379"
     CACHE_TTL: int = 3600  # 1 hora
 
 
