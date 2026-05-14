@@ -17,12 +17,12 @@ jobs:
     - name: Set up Python 3.13
       uses: actions/setup-python@v5
       with:
-        python-version: "3.13" # Ajustado para bater com a versão que você usou localmente
+        python-version: "3.13" # Ajustado para bater com a versão local
 
     - name: Install Poetry
       uses: snok/install-poetry@v1
       with:
-        version: 1.8.2
+        version: 2.3.2
         virtualenvs-create: true
         virtualenvs-in-project: true
 
