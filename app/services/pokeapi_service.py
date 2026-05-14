@@ -4,10 +4,9 @@ import redis.asyncio as redis
 from app.core.config import settings
 from app.utils.exceptions import PokemonNotFoundException, ExternalAPIException
 
-# Inicialização do cliente Redis
-redis_client = redis.Redis(
-    host=settings.REDIS_HOST,
-    port=settings.REDIS_PORT,
+# Inicialização do cliente Redis atualizada para aceitar URL
+redis_client = redis.from_url(
+    settings.REDIS_URL,
     decode_responses=True
 )
 
