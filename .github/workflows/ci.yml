@@ -31,3 +31,13 @@ jobs:
 
     - name: Run Tests with Coverage
       run: poetry run pytest --cov=app tests/
+
+  deploy-render:
+      # Este job SÓ roda se o 'test-and-lint' passar e se for um push/merge na branch 'main'
+      needs: test-and-lint
+      runs-on: ubuntu-latest
+      if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+      
+      steps:
+      - name: Trigger Render Deploy
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
