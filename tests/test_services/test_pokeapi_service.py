@@ -1,7 +1,6 @@
 import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import httpx
 import pytest
 
 from app.services import pokeapi_service
@@ -71,9 +70,40 @@ async def test_get_pokemon_by_id_raises_not_found_for_404():
 
 
 @pytest.mark.anyio
-async def test_get_pokemon_by_id_raises_external_api_exception_on_http_error():
+async def test_get_pokemon_by_id_returns_cached_data():
+    cached_payload = {
+        "id": 25,
+        "name": "pikachu",
+        "height": 4,
+        "weight": 60,
+        "types": ["electric"],
+        "sprites": {"front_default": "front", "back_default": "back"},
+    }
+
+    with patch.object(pokeapi_service.redis_client, "get", AsyncMock(return_value=json.dumps(cached_payload))), \
+         patch.object(pokeapi_service.redis_client, "setex", AsyncMock()) as mock_setex:
+        result = await pokeapi_service.get_pokemon_by_id(25)
+
+    assert result == cached_payload
+    mock_setex.assert_not_awaited()
+
+
+@pytest.mark.anyio
+async def test_get_pokemon_by_id_fetches_and_caches_when_cache_is_empty():
+    response_payload = {
+        "id": 25,
+        "name": "pikachu",
+        "height": 4,
+        "weight": 60,
+        "types": [{"type": {"name": "electric"}}],
+        "sprites": {
+            "front_default": "https://example.com/front.png",
+            "back_default": "https://example.com/back.png",
+        },
+    }
     mock_response = MagicMock()
-    mock_response.raise_for_status.side_effect = httpx.HTTPError("boom")
+    mock_response.status_code = 200
+    mock_response.json.return_value = response_payload
 
     mock_client = AsyncMock()
     mock_client.get.return_value = mock_response
@@ -82,6 +112,29 @@ async def test_get_pokemon_by_id_raises_external_api_exception_on_http_error():
     mock_context_manager.__aexit__.return_value = None
 
     with patch.object(pokeapi_service.redis_client, "get", AsyncMock(return_value=None)), \
+         patch.object(pokeapi_service.redis_client, "setex", AsyncMock()) as mock_setex, \
          patch("app.services.pokeapi_service.httpx.AsyncClient", return_value=mock_context_manager):
+        result = await pokeapi_service.get_pokemon_by_id(25)
+
+    assert result["id"] == 25
+    assert result["name"] == "pikachu"
+    assert result["types"] == ["electric"]
+    assert result["sprites"]["front_default"] == "https://example.com/front.png"
+    mock_setex.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_get_pokemon_by_id_raises_external_api_exception_on_http_error():
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+
+    mock_client = AsyncMock()
+    mock_client.get.return_value = mock_response
+    mock_context_manager = AsyncMock()
+    mock_context_manager.__aenter__.return_value = mock_client
+    mock_context_manager.__aexit__.return_value = None
+
+    with patch.object(pokeapi_service.redis_client, "get", AsyncMock(return_value=None)), \
+        patch("app.services.pokeapi_service.httpx.AsyncClient", return_value=mock_context_manager):
         with pytest.raises(ExternalAPIException):
-            await pokeapi_service.get_pokemons()
+            await pokeapi_service.get_pokemon_by_id(25)

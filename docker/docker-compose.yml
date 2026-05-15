@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api:
     build:
@@ -9,13 +7,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_URL=redis://redis:6379
     depends_on:
       redis:
         condition: service_healthy
     networks:
       - pokedex-network
+    volumes:
+      # Mapeia a pasta local para dentro do container para não perder o .db
+      - ../data:/app/data 
 
   redis:
     image: redis:7-alpine

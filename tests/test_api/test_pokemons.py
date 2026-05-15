@@ -34,7 +34,7 @@ def test_list_pokemons(mock_get_pokemons, client):
     # Configuramos o mock para retornar nossos dados falsos
     mock_get_pokemons.return_value = MOCK_POKEMON_LIST
 
-    response = client.get("/pokemons?limit=2&offset=0")
+    response = client.get("/pokemons/external?limit=2&offset=0")
 
     assert response.status_code == 200
     json_response = response.json()
@@ -48,7 +48,7 @@ def test_list_pokemons(mock_get_pokemons, client):
 def test_get_pokemon_details(mock_get_pokemon_by_id, client):
     mock_get_pokemon_by_id.return_value = MOCK_POKEMON_DETAIL
 
-    response = client.get("/pokemons/25")
+    response = client.get("/pokemons/external/25")
 
     assert response.status_code == 200
     json_response = response.json()
@@ -62,7 +62,7 @@ def test_get_pokemon_not_found(mock_get_pokemon_by_id, client):
     # Simulamos o disparo de uma exceção quando o pokemon não existe
     mock_get_pokemon_by_id.side_effect = PokemonNotFoundException("9999")
 
-    response = client.get("/pokemons/9999")
+    response = client.get("/pokemons/external/9999")
 
     assert response.status_code == 404
     assert "not found" in response.json()["detail"]
