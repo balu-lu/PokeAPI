@@ -1,6 +1,8 @@
 # Stage 1: Builder
 FROM python:3.10-slim as builder
 
+ARG INSTALL_DEV=false
+
 # Evita a criação de ficheiros .pyc e mantém o output no terminal
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
@@ -19,9 +21,10 @@ ENV PATH="/root/.local/bin:$PATH"
 # Copiar apenas os ficheiros de dependência primeiro para aproveitar o cache do Docker
 COPY pyproject.toml poetry.lock* ./
 
-# Instalar dependências do projeto (sem as de dev e não criando virtualenv)
+# Instalar dependências do projeto sem criar virtualenv.
+# Em desenvolvimento, também instalamos o grupo `dev` para disponibilizar o pytest.
 RUN poetry config virtualenvs.create false \
-    && poetry install --only main --no-interaction --no-ansi
+    && if [ "$INSTALL_DEV" = "true" ]; then poetry install --with dev --no-interaction --no-ansi; else poetry install --only main --no-interaction --no-ansi; fi
 
 # Stage 2: Imagem Final
 FROM python:3.10-slim
